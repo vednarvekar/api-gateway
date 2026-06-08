@@ -1,0 +1,35 @@
+@baseUrl = http://localhost:4004
+@email = admin@test.com
+@password = admin123
+
+### 1. Health check (no auth needed)
+GET {{baseUrl}}/health
+
+### 2. Login — copy the accessToken from response into @token below
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 3. Set your token here after login
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODA5NDIxNzMsImV4cCI6MTc4MDk0NTc3M30.YEpkRrRT2NrEZgZPEILnchnDvSsbirJkkvwcDmmiTvE
+
+### 4. Hit protected route with valid token
+GET {{baseUrl}}/user/profile
+Authorization: Bearer {{token}}
+
+### 5. Hit protected route with no token — expect 401
+GET {{baseUrl}}/user/profile
+
+### 6. Hit protected route with garbage token — expect 401
+GET {{baseUrl}}/user/profile
+Authorization: Bearer thisisnotavalidtoken
+
+### 7. Hit unknown route — expect 404
+GET {{baseUrl}}/unknown/route
+
+### 8. Hit public route (no auth) — expect proxy attempt
+GET {{baseUrl}}/public/something

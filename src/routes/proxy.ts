@@ -15,7 +15,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
         const route = matchRoutes(urlObj.pathname)
 
         if(!route){
-            return reply.code(401).send({ error: 'Route not found' })
+            return reply.code(404).send({ error: 'Route not found' })
         }
 
         // 1. Rate limit by IP
@@ -57,6 +57,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
         const startTime = Date.now()
 
         try {
+            console.log('PROXY HIT:', request.url)
             const { statusCode, headers, body } = await httpRequest(targetUrl, {
                 method: request.method,
                 headers: {

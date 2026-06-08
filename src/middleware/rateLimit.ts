@@ -18,6 +18,12 @@ export function checkRateLimit (
         bucket.set(key, {count: 1, resetAt: now + windowMs})
         return { allowed: true, remaining: maxRquests - 1, resetAt: now + windowMs}
     }
+    
+    console.log({
+        key,
+        count: entry?.count,
+        maxRequests: maxRquests
+    })
 
     if(entry.count >= maxRquests){
         return {allowed: false, remaining: 0, resetAt: entry.resetAt}
@@ -32,4 +38,4 @@ setInterval(() => {
     for(const [key, entry] of bucket.entries()){
         if(now > entry.resetAt) bucket.delete(key)
     }
-}, 5 * 60_000)
+}, 1 * 60_000)
