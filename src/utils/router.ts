@@ -1,4 +1,4 @@
-import type {Route} from "./types/routes.js"
+import type {Route} from "../types/routes.js"
 
 export const routes: Route[] = [
     { path: "/user", upstream: "http://localhost:3001", auth: true },

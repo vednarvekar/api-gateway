@@ -1,7 +1,7 @@
 import 'dotenv/config'
 
 export const config = {
-    port: process.env.PORT || 4001,
+    port: (process.env.PORT || 4001) as number,
     jwtSecret: process.env.JWT_SECRET || 'dev-secret-chnages-in-prod',
     rateLimit: {
         windowMs: 60_000, // 1M
