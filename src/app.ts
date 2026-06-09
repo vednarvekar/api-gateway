@@ -5,7 +5,13 @@ import { authRoute } from './routes/auth.js'
 import { proxyRoute } from './routes/proxy.js'
 
 export function buildApp() {
-  const fastify = Fastify({ logger: true })
+  const fastify = Fastify({ 
+    logger: {
+      transport: {
+        target: 'pino-pretty'
+      }
+    } 
+  })
   
   fastify.setErrorHandler(errorHandler)
   

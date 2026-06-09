@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### 3. Set your token here after login
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODA5NDIxNzMsImV4cCI6MTc4MDk0NTc3M30.YEpkRrRT2NrEZgZPEILnchnDvSsbirJkkvwcDmmiTvE
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODEwMjIwMzYsImV4cCI6MTc4MTAyNTYzNn0.QwPvHbsZi5o8NjEYLlOeXSMZL3stXlG1uOiQiicUMz0
 
 ### 4. Hit protected route with valid token
 GET {{baseUrl}}/user/profile
@@ -33,3 +33,23 @@ GET {{baseUrl}}/unknown/route
 
 ### 8. Hit public route (no auth) — expect proxy attempt
 GET {{baseUrl}}/public/something
+
+### 9. Login as regular user
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@test.com",
+  "password": "user123"
+}
+
+### 10. Set user token
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTIiLCJyb2xlIjoidXNlciIsImlhdCI6MTc4MTAyMTkzMSwiZXhwIjoxNzgxMDI1NTMxfQ.Pn-Wz6LaY6UlLkrZ859Mb0SGa41QdXDYmqe3X92-Y4o
+
+### 11. Hit admin route as regular user — expect 403
+GET {{baseUrl}}/admin/dashboard
+Authorization: Bearer {{userToken}}
+
+### 12. Hit admin route as admin — expect 502 (no upstream, but auth passed)
+GET {{baseUrl}}/admin/dashboard
+Authorization: Bearer {{token}}

@@ -6,7 +6,7 @@ export async function verifyAuth(
     request: FastifyRequest,
     reply: FastifyReply
 ): Promise<JwtPayload | null> {
-    console.log('AUTH CHECK')
+
     const authHeader = request.headers['authorization']
 
     if (!authHeader?.startsWith('Bearer')) {

@@ -6,7 +6,7 @@ import { config } from "../utils/config.js";
 import { checkRateLimit } from "../middleware/rateLimit.js";
 import { verifyAuth } from "../middleware/auth.js";
 import { logError, logRequest } from "../middleware/logger.js";
-
+import { checkRole } from "../middleware/rbac.js";
 
 export async function proxyRoute(fastify: FastifyInstance) {
 
@@ -41,6 +41,8 @@ export async function proxyRoute(fastify: FastifyInstance) {
 
             userId = payload.userId
 
+            if (!checkRole(payload, route, reply)) return
+
             const userR1 = checkRateLimit(
                 `user:${userId}`,
                 route.rateLimit ?? config.rateLimit.maxRequests,
@@ -57,7 +59,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
         const startTime = Date.now()
 
         try {
-            console.log('PROXY HIT:', request.url)
+            // console.log('PROXY HIT:', request.url)
             const { statusCode, headers, body } = await httpRequest(targetUrl, {
                 method: request.method,
                 headers: {

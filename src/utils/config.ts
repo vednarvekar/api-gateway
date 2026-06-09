@@ -6,5 +6,6 @@ export const config = {
     rateLimit: {
         windowMs: 60_000, // 1M
         maxRequests: 100 // limit each IP to 100 requests per windowMs
-    }
+    },
+    databaseUrl: 
 }
