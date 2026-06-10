@@ -1,7 +1,7 @@
 import { type FastifyInstance } from "fastify";
 import { request } from "node:http";
 import { request as httpRequest} from "undici";
-import { matchRoutes } from "../utils/router.js";
+import { matchRoutes } from "../router.js";
 import { config } from "../utils/config.js";
 import { checkRateLimit } from "../middleware/rateLimit.js";
 import { verifyAuth } from "../middleware/auth.js";

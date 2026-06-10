@@ -3,7 +3,7 @@ export interface Route {
     upstream: string,
     auth?: boolean,
     roles?: string[],
-    rateLimit?: number
+    rateLimit?: number | undefined
 }
 
 export interface JwtPayload {

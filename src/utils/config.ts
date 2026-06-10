@@ -7,5 +7,5 @@ export const config = {
         windowMs: 60_000, // 1M
         maxRequests: 100 // limit each IP to 100 requests per windowMs
     },
-    databaseUrl: 
+    databaseUrl: process.env.DATABASE_URL
 }

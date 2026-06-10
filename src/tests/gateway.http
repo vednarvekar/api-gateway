@@ -53,3 +53,10 @@ Authorization: Bearer {{userToken}}
 ### 12. Hit admin route as admin — expect 502 (no upstream, but auth passed)
 GET {{baseUrl}}/admin/dashboard
 Authorization: Bearer {{token}}
+
+### 13. Health check after DB routes loaded
+GET {{baseUrl}}/health
+
+### 14. Protected route — should still work same as before
+GET {{baseUrl}}/user/profile
+Authorization: Bearer {{token}}
