@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### 3. Set your token here after login
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODEwOTE0MTEsImV4cCI6MTc4MTA5NTAxMX0.4yg04e9xNRCeTcNbi58jA2c7r1EXJcXhmjLpc2n4QX0
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODExMTQxNDgsImV4cCI6MTc4MTExNzc0OH0.c9bq9dYiw2jw3PJyIP2nJmAnEJUcHOyKzL-IawvcIWQ
 
 ### 4. Hit protected route with valid token
 GET {{baseUrl}}/user/profile
@@ -60,3 +60,16 @@ GET {{baseUrl}}/health
 ### 14. Protected route — should still work same as before
 GET {{baseUrl}}/user/profile
 Authorization: Bearer {{token}}
+
+### 15. Check rate limit headers are present
+GET {{baseUrl}}/health
+
+### 16. Check circuit breaker status
+GET {{baseUrl}}/health/circuits
+
+### 17. Spam a dead upstream — watch it go open after 5 failures
+GET {{baseUrl}}/admin/dashboard
+Authorization: Bearer {{token}}
+
+### 18. Health check shows redis connected
+GET {{baseUrl}}/health

@@ -7,6 +7,7 @@ import { checkRateLimit } from "../middleware/rateLimit.js";
 import { verifyAuth } from "../middleware/auth.js";
 import { logError, logRequest } from "../middleware/logger.js";
 import { checkRole } from "../middleware/rbac.js";
+import { proxyRequest } from "../utils/circuitBreaker.js";
 
 export async function proxyRoute(fastify: FastifyInstance) {
 
@@ -19,7 +20,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
         }
 
         // 1. Rate limit by IP
-        const r1 = checkRateLimit(
+        const r1 = await checkRateLimit(
             `ip:${request.ip}`,
             route.rateLimit ?? config.rateLimit.maxRequests,
             config.rateLimit.windowMs
@@ -43,7 +44,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
 
             if (!checkRole(payload, route, reply)) return
 
-            const userR1 = checkRateLimit(
+            const userR1 = await checkRateLimit(
                 `user:${userId}`,
                 route.rateLimit ?? config.rateLimit.maxRequests,
                 config.rateLimit.windowMs
@@ -60,7 +61,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
 
         try {
             // console.log('PROXY HIT:', request.url)
-            const { statusCode, headers, body } = await httpRequest(targetUrl, {
+            const { statusCode, headers, body } = await proxyRequest(targetUrl, {
                 method: request.method,
                 headers: {
                     ...(request.headers as Record<string, string>),
@@ -79,7 +80,13 @@ export async function proxyRoute(fastify: FastifyInstance) {
             logRequest(request, statusCode, Date.now() - startTime, route.upstream)
             return reply.code(statusCode).send(body)
 
-        } catch (error) {
+        } catch (error: any) {
+                // opossum throws with message 'Breaker is open' when circuit is open
+            if (error.message === 'Breaker is open') {
+                logError(request, error, 'circuit_open')
+                return reply.code(503).send({ error: 'Service temporarily unavailable' })
+            }
+
             logError(request, error, 'upstream-unreachable')
             return reply.code(502).send({ error: 'Bad Gateway: upstream service unreachable' })
         }

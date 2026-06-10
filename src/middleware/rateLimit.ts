@@ -1,41 +1,34 @@
-interface BucketEntry {
-    count: number,
-    resetAt: number
-}
+import { redis } from "../db/redis.js"
 
-const bucket = new Map<string, BucketEntry>()
-
-export function checkRateLimit (
+export async function checkRateLimit(
     key: string,
-    maxRquests: number,
+    maxRequests: number,
     windowMs: number
-): {allowed: boolean; remaining: number; resetAt: number } {
+): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
 
+    const windowSec = Math.ceil(windowMs / 1000)
     const now = Date.now()
-    const entry = bucket.get(key)
+    const resetAt = now + windowMs
 
-    if(!entry || now > entry.resetAt) {
-        bucket.set(key, {count: 1, resetAt: now + windowMs})
-        return { allowed: true, remaining: maxRquests - 1, resetAt: now + windowMs}
-    }
-    
-    console.log({
-        key,
-        count: entry?.count,
-        maxRequests: maxRquests
-    })
+    // INCR atomically increments — if key doesn't exist Redis creates it at 0 first
+    const count = await redis.incr(key)
 
-    if(entry.count >= maxRquests){
-        return {allowed: false, remaining: 0, resetAt: entry.resetAt}
+    // Only set expiry on first request in window
+    if (count === 1) {
+        await redis.expire(key, windowSec)
     }
 
-    entry.count++
-    return { allowed: true, remaining: maxRquests - entry.count, resetAt: entry.resetAt }
+    // Get actual TTL to return accurate resetAt
+    const ttl = await redis.ttl(key)
+    const actualResetAt = now + (ttl * 1000)
+
+    if (count > maxRequests) {
+        return { allowed: false, remaining: 0, resetAt: actualResetAt }
+    }
+
+    return {
+        allowed: true,
+        remaining: maxRequests - count,
+        resetAt: actualResetAt
+    }
 }
-
-setInterval(() => {
-    const now = Date.now()
-    for(const [key, entry] of bucket.entries()){
-        if(now > entry.resetAt) bucket.delete(key)
-    }
-}, 1 * 60_000)

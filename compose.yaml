@@ -5,12 +5,15 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4004
-      # Tells your Node app how to reach the postgres container internally
+      # Tells your Node app how to reach the DB container internally
       DATABASE_URL: postgres://postgres:mysecretpassword@postgres:5432/gateway_db
+      REDIS_URL: redis://redis:6379
     ports:
       - "4004:4004"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   postgres:
@@ -27,6 +30,18 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: gateway_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
