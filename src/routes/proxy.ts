@@ -1,7 +1,7 @@
 import { type FastifyInstance } from "fastify";
 import { request } from "node:http";
 import { request as httpRequest} from "undici";
-import { matchRoutes } from "../router.js";
+import { matchRoute } from "../router.js";
 import { config } from "../utils/config.js";
 import { checkRateLimit } from "../middleware/rateLimit.js";
 import { verifyAuth } from "../middleware/auth.js";
@@ -12,7 +12,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
 
     fastify.all("/*", async (request, reply) => {
         const urlObj = new URL(request.url, `http://${request.headers.host}`)
-        const route = matchRoutes(urlObj.pathname)
+        const route = matchRoute(urlObj.pathname)
 
         if(!route){
             return reply.code(404).send({ error: 'Route not found' })

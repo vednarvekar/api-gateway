@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### 3. Set your token here after login
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODEwMjIwMzYsImV4cCI6MTc4MTAyNTYzNn0.QwPvHbsZi5o8NjEYLlOeXSMZL3stXlG1uOiQiicUMz0
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODEwOTE0MTEsImV4cCI6MTc4MTA5NTAxMX0.4yg04e9xNRCeTcNbi58jA2c7r1EXJcXhmjLpc2n4QX0
 
 ### 4. Hit protected route with valid token
 GET {{baseUrl}}/user/profile

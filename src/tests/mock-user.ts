@@ -1,19 +1,38 @@
 import Fastify from 'fastify'
 
-const app = Fastify()
+// 1. Create the User Service (Port 4001)
+const userService = Fastify()
 
-app.get('/user/profile', async (request) => {
+userService.get('/user/profile', async (request) => {
   return {
     success: true,
-    userId: request.headers['x-user-id']
+    userId: request.headers['x-user-id'] || 'no-user-id-passed'
   }
-}).listen({port: 4001})
+})
 
-// app.listen({ port: 4001 })
+userService.listen({ port: 4001 }, (err, address) => {
+  if (err) {
+    console.error("Failed to start User Service:", err)
+  } else {
+    console.log(`👤 User Mock Service online at ${address}`)
+  }
+})
 
-app.get('admin/dashboard', async (request) => {
+
+// 2. Create the Admin Service (Port 4005)
+const adminService = Fastify()
+
+adminService.get('/admin/dashboard', async (request) => {
   return {
     success: true, 
-    userId: request.headers['x-user-id']
+    userId: request.headers['x-user-id'] || 'no-admin-id-passed'
   }
-}).listen({port: 4005})
+})
+
+adminService.listen({ port: 4005 }, (err, address) => {
+  if (err) {
+    console.error("Failed to start Admin Service:", err)
+  } else {
+    console.log(`👑 Admin Mock Service online at ${address}`)
+  }
+})

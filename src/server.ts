@@ -2,7 +2,7 @@ import { buildApp } from './app.js'
 import { config } from './utils/config.js'
 import { db } from './db/client.js'
 
-const app = buildApp()
+const app = await buildApp()
 
 const start = async () => {
   try {
