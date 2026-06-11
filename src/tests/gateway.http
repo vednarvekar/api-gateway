@@ -84,3 +84,6 @@ GET {{baseUrl}}/billing/invoices
 ### 21. Hit API key route with wrong key — expect 401
 GET {{baseUrl}}/billing/invoices
 x-api-key: wrong-key
+
+### 22. Check Prometheus metrics
+GET {{baseUrl}}/metrics

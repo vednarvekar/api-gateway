@@ -1,11 +1,10 @@
 import { type FastifyInstance } from "fastify";
-import { request } from "node:http";
-import { request as httpRequest} from "undici";
 
 import { matchRoute } from "../router.js";
 
 import { config } from "../utils/config.js";
 import { proxyRequest } from "../utils/circuitBreaker.js";
+import { httpRequestsTotal, httpRequestDuration, rateLimitHitsTotal } from "../utils/metrics.js"
 
 import { checkRateLimit } from "../middleware/rateLimit.js";
 import { verifyAuth } from "../middleware/auth.js";
@@ -36,10 +35,10 @@ export async function proxyRoute(fastify: FastifyInstance) {
         reply.header('X-RateLimit-Remaining', r1.remaining)
         reply.header('X-RateLimit-Reset', Math.ceil(r1.resetAt / 1000))
 
-        if(!r1.allowed){
+        if (!r1.allowed) {
+            rateLimitHitsTotal.inc({ key_type: 'ip' })
             return reply.code(429).send({ error: 'Too many requests...' })
-        }
-
+        }   
 
 
         // 2. Auth
@@ -77,6 +76,7 @@ export async function proxyRoute(fastify: FastifyInstance) {
                 config.rateLimit.windowMs
             )
             if (!userRl.allowed) {
+                rateLimitHitsTotal.inc({ key_type: 'user' })
                 return reply.code(429).send({ error: "Too many requests" })
             }
         }
@@ -104,9 +104,26 @@ export async function proxyRoute(fastify: FastifyInstance) {
             }
             
             logRequest(request, statusCode, Date.now() - startTime, route.upstream)
+
+            httpRequestsTotal.inc({
+                method: request.method,
+                route: route.path,
+                status_code: statusCode,
+            })
+            httpRequestDuration.observe(
+                { method: request.method, route: route.path, status_code: statusCode },
+                Date.now() - startTime
+            )
+
             return reply.code(statusCode).send(body)
 
+
         } catch (error: any) {
+            httpRequestsTotal.inc({
+                method: request.method,
+                route: route.path ?? 'unknown',
+                status_code: error.message === 'Breaker is open' ? 503 : 502,
+            })
                 // opossum throws with message 'Breaker is open' when circuit is open
             if (error.message === 'Breaker is open') {
                 logError(request, error, 'circuit_open')

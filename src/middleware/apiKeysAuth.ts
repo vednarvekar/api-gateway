@@ -3,6 +3,7 @@ import { apiKeys } from "../db/schema.js"
 import { eq, and } from "drizzle-orm"
 import type { FastifyRequest, FastifyReply } from "fastify"
 import type { JwtPayload } from "../types/routes.js"
+import { authFailuresTotal } from "../utils/metrics.js"
 
 export async function verifyApiKey(
     request: FastifyRequest,
@@ -12,6 +13,7 @@ export async function verifyApiKey(
     const key = request.headers['x-api-key'] as string
 
     if (!key) {
+        authFailuresTotal.inc({ reason: 'missing', auth_type: 'apikey' })
         reply.code(401).send({ error: "Missing x-api-key header" })
         return null
     }
@@ -24,6 +26,7 @@ export async function verifyApiKey(
         
         
         if (result.length === 0) {
+            authFailuresTotal.inc({ reason: 'invalid', auth_type: 'apikey' })
             reply.code(401).send({ error: "Invalid or disabled API key" })
             return null
         }

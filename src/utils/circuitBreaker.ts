@@ -1,5 +1,6 @@
 import CircuitBreaker from "opossum";
 import { request as httpRequest, type Dispatcher} from "undici"
+import { circuitBreakerState } from "./metrics.js";
 
 interface ProxyRequestOptions {
     method: string,
@@ -22,9 +23,19 @@ function getBreaker(upstream: string): CircuitBreaker {
     })
 
 
-    breaker.on('open',     () => console.warn(`Circuit OPEN for ${upstream} — stopping requests`))
-    breaker.on('halfOpen', () => console.info(`Circuit HALF-OPEN for ${upstream} — testing...`))
-    breaker.on('close',    () => console.info(`Circuit CLOSED for ${upstream} — back to normal`))
+    // inside getBreaker(), after creating the breaker
+    breaker.on('open',     () => {
+        console.warn(`Circuit OPEN for ${upstream}`)
+        circuitBreakerState.set({ upstream }, 1)
+    })
+    breaker.on('halfOpen', () => {
+        console.info(`Circuit HALF-OPEN for ${upstream}`)
+        circuitBreakerState.set({ upstream }, 2)
+    })
+    breaker.on('close',    () => {
+        console.info(`Circuit CLOSED for ${upstream}`)
+        circuitBreakerState.set({ upstream }, 0)
+    })
 
     breakers.set(upstream, breaker)
     return breaker

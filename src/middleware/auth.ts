@@ -1,6 +1,7 @@
 import { verifyToken } from "../utils/jwt.js"
 import type { JwtPayload } from "../types/routes.js"
 import type { FastifyReply, FastifyRequest } from "fastify"
+import { authFailuresTotal } from "../utils/metrics.js"
 
 export async function verifyAuth(
     request: FastifyRequest,
@@ -20,8 +21,10 @@ export async function verifyAuth(
         return verifyToken(token)
     } catch (error: any) {
         if (error.name === 'TokenExpiredError') {
+            authFailuresTotal.inc({ reason: 'expired', auth_type: 'jwt' })
             reply.code(401).send({ error: "JWT Token Expired" })
         } else {
+            authFailuresTotal.inc({ reason: 'invalid', auth_type: 'jwt' })
             reply.code(401).send({ error: "Invalid Token" })
         }
         return null
