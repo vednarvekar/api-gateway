@@ -16,6 +16,7 @@
   "dependencies": {
     "@fastify/jwt": "^10.1.0",
     "@types/express": "^5.0.6",
+    "autocannon": "^8.0.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
@@ -30,6 +31,7 @@
     "undici": "^7.23.0"
   },
   "devDependencies": {
+    "@types/autocannon": "^7.12.7",
     "@types/ioredis": "^4.28.10",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.9.2",

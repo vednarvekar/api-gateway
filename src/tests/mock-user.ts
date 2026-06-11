@@ -20,22 +20,22 @@ userService.listen({ port: 4001 }, (err, address) => {
 
 
 // 2. Create the Admin Service (Port 4005)
-// const adminService = Fastify()
+const adminService = Fastify()
 
-// adminService.get('/admin/dashboard', async (request) => {
-//   return {
-//     success: true, 
-//     userId: request.headers['x-user-id'] || 'no-admin-id-passed'
-//   }
-// })
+adminService.get('/admin/dashboard', async (request) => {
+  return {
+    success: true, 
+    userId: request.headers['x-user-id'] || 'no-admin-id-passed'
+  }
+})
 
-// adminService.listen({ port: 4005 }, (err, address) => {
-//   if (err) {
-//     console.error("Failed to start Admin Service:", err)
-//   } else {
-//     console.log(`👑 Admin Mock Service online at ${address}`)
-//   }
-// })
+adminService.listen({ port: 4005 }, (err, address) => {
+  if (err) {
+    console.error("Failed to start Admin Service:", err)
+  } else {
+    console.log(`👑 Admin Mock Service online at ${address}`)
+  }
+})
 
 // 3. Create the Billing Service (Port 4004-6)
 const billingService = Fastify()
