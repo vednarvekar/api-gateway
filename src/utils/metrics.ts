@@ -42,3 +42,10 @@ export const authFailuresTotal = new Counter({
     labelNames: ["reason", "auth_type"],   // reason: expired, invalid, missing
     registers: [registry],
 })
+
+export const cacheHitsTotal = new Counter({
+    name: "gateway_cache_hits_total",
+    help: "Total number of cache hits",
+    labelNames: ["route"],
+    registers: [registry],
+})

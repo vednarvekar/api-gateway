@@ -87,3 +87,14 @@ x-api-key: wrong-key
 
 ### 22. Check Prometheus metrics
 GET {{baseUrl}}/metrics
+
+### 23. First request — expect X-Cache: MISS
+GET {{baseUrl}}/billing/invoices
+x-api-key: test-api-key-billing-service
+
+### 24. Second request — expect X-Cache: HIT (no upstream hit)
+GET {{baseUrl}}/billing/invoices
+x-api-key: test-api-key-billing-service
+
+### 25. Check cache hit counter in metrics
+GET {{baseUrl}}/metrics
