@@ -1,13 +1,19 @@
 import { type FastifyInstance } from "fastify";
 import { request } from "node:http";
 import { request as httpRequest} from "undici";
+
 import { matchRoute } from "../router.js";
+
 import { config } from "../utils/config.js";
+import { proxyRequest } from "../utils/circuitBreaker.js";
+
 import { checkRateLimit } from "../middleware/rateLimit.js";
 import { verifyAuth } from "../middleware/auth.js";
 import { logError, logRequest } from "../middleware/logger.js";
 import { checkRole } from "../middleware/rbac.js";
-import { proxyRequest } from "../utils/circuitBreaker.js";
+import { verifyApiKey } from "../middleware/apiKeysAuth.js"
+
+import type { JwtPayload } from "../types/routes.js"
 
 export async function proxyRoute(fastify: FastifyInstance) {
 
@@ -34,24 +40,44 @@ export async function proxyRoute(fastify: FastifyInstance) {
             return reply.code(429).send({ error: 'Too many requests...' })
         }
 
+
+
         // 2. Auth
         let userId: string | undefined
-        if(route.auth !== false){
-            const payload = await verifyAuth(request, reply)
-            if(!payload) return
+        if (route.auth !== false) {
+            let payload: JwtPayload | null = null
+
+            const authType = route.authType ?? 'jwt'
+
+            if (authType === 'apikey') {
+                payload = await verifyApiKey(request, reply)
+            } else if (authType === 'any') {
+                // accept either — try JWT first, fall back to API key
+                if (request.headers['authorization']) {
+                    payload = await verifyAuth(request, reply)
+                } else if (request.headers['x-api-key']) {
+                    payload = await verifyApiKey(request, reply)
+                } else {
+                    reply.code(401).send({ error: "Missing authorization" })
+                    return
+                }
+            } else {
+                payload = await verifyAuth(request, reply)
+            }
+
+            if (!payload) return
 
             userId = payload.userId
 
             if (!checkRole(payload, route, reply)) return
 
-            const userR1 = await checkRateLimit(
+            const userRl = await checkRateLimit(
                 `user:${userId}`,
                 route.rateLimit ?? config.rateLimit.maxRequests,
                 config.rateLimit.windowMs
             )
-
-            if(!userR1.allowed){
-                return reply.code(429).send({ error: 'Too many requests...' })
+            if (!userRl.allowed) {
+                return reply.code(429).send({ error: "Too many requests" })
             }
         }
 

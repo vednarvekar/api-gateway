@@ -4,12 +4,12 @@ services:
       context: .
     environment:
       NODE_ENV: production
-      PORT: 4004
+      # PORT: 4004
       # Tells your Node app how to reach the DB container internally
       DATABASE_URL: postgres://postgres:mysecretpassword@postgres:5432/gateway_db
       REDIS_URL: redis://redis:6379
-    ports:
-      - "4004:4004"
+    # ports:
+    #   - "4004:4004"
     depends_on:
       postgres:
         condition: service_healthy

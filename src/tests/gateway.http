@@ -73,3 +73,14 @@ Authorization: Bearer {{token}}
 
 ### 18. Health check shows redis connected
 GET {{baseUrl}}/health
+
+### 19. Hit API key protected route with valid key
+GET {{baseUrl}}/billing/invoices
+x-api-key: test-api-key-billing-service
+
+### 20. Hit API key route with no key — expect 401
+GET {{baseUrl}}/billing/invoices
+
+### 21. Hit API key route with wrong key — expect 401
+GET {{baseUrl}}/billing/invoices
+x-api-key: wrong-key

@@ -13,13 +13,22 @@ async function loadRoutes(): Promise<void> {
         .from(routesTable)
         .where(eq(routesTable.enabled, true))
 
-    cachedRoutes = rows.map(r => ({
-        path:       r.path,
-        upstream:   r.upstream,
-        auth:       r.auth,
-        roles:      r.roles ?? [],
-        rateLimit:  r.rateLimit ?? undefined,
-    }))
+    cachedRoutes = rows.map(r => {
+        const routeObj: Route = {
+            path:       r.path,
+            upstream:   r.upstream,
+            auth:       r.auth,
+            authType:  (r.authType ?? 'jwt') as 'jwt' | 'apikey' | 'any',
+            roles:      r.roles ?? [],
+        }
+
+        // Only assign rateLimit if it is not null or undefined
+        if (r.rateLimit !== null && r.rateLimit !== undefined) {
+            routeObj.rateLimit = r.rateLimit
+        }
+
+        return routeObj
+    })
 }
 
 export async function initRouter(): Promise<void> {

@@ -6,7 +6,7 @@ export const config = {
     redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
     rateLimit: {
         windowMs: 60_000, // 1M
-        maxRequests: 10 // limit each IP to 100 requests per windowMs
+        maxRequests: 100 // limit each IP to 100 requests per windowMs
     },
     databaseUrl: process.env.DATABASE_URL
 }

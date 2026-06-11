@@ -36,3 +36,21 @@ userService.listen({ port: 4001 }, (err, address) => {
 //     console.log(`👑 Admin Mock Service online at ${address}`)
 //   }
 // })
+
+// 3. Create the Billing Service (Port 4004-6)
+const billingService = Fastify()
+
+billingService.get('/billing/invoices', async (request) => {
+  return {
+    success: true, 
+    userId: request.headers['x-user-id'] || 'no-admin-id-passed'
+  }
+})
+
+billingService.listen({ port: 4006 }, (err, address) => {
+  if (err) {
+    console.error("Failed to start Billing Service:", err)
+  } else {
+    console.log(`👑 Billing Mock Service online at ${address}`)
+  }
+})
