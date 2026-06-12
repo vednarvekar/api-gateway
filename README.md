@@ -65,7 +65,7 @@ Every request goes through:
 
 Run the load test yourself:
 ```bash
-RATE_LIMIT_MAX=1000000 npx tsx tests/load-test.ts
+RATE_LIMIT_MAX=1000000 npx tsx src/tests/automated-test.ts
 ```
 
 ---

@@ -24,7 +24,7 @@ function getBreaker(upstream: string): CircuitBreaker {
 
 
     // inside getBreaker(), after creating the breaker
-    breaker.on('open',     () => {
+    breaker.on('open', () => {
         console.warn(`Circuit OPEN for ${upstream}`)
         circuitBreakerState.set({ upstream }, 1)
     })
@@ -32,7 +32,7 @@ function getBreaker(upstream: string): CircuitBreaker {
         console.info(`Circuit HALF-OPEN for ${upstream}`)
         circuitBreakerState.set({ upstream }, 2)
     })
-    breaker.on('close',    () => {
+    breaker.on('close', () => {
         console.info(`Circuit CLOSED for ${upstream}`)
         circuitBreakerState.set({ upstream }, 0)
     })
