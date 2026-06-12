@@ -1,4 +1,274 @@
-# NodeJS-API-Gateway
+<div align="center">
+
+# ⚡ Node.js API Gateway
+
+**Production-grade reverse proxy built from scratch in TypeScript**
+
+[![Node](https://img.shields.io/badge/Node.js-24-green?style=flat-square&logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://typescriptlang.org)
+[![Fastify](https://img.shields.io/badge/Fastify-5-black?style=flat-square&logo=fastify)](https://fastify.dev)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=flat-square&logo=docker)](https://docker.com)
+[![Redis](https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis)](https://redis.io)
+[![Postgres](https://img.shields.io/badge/PostgreSQL-16-blue?style=flat-square&logo=postgresql)](https://postgresql.org)
+
+</div>
+
+---
+
+## What it does
+
+A single gateway that sits in front of all your backend services and handles everything they shouldn't have to care about — auth, rate limiting, routing, caching, and observability.
+
+```
+Every request goes through:
+
+ Client
+   │
+   ▼
+[Rate Limit: IP]       ──→  429 if exceeded
+   │
+[Auth: JWT / API Key]  ──→  401 if invalid
+   │
+[RBAC: Role Check]     ──→  403 if unauthorized
+   │
+[Rate Limit: User]     ──→  429 if exceeded
+   │
+[Cache: Redis GET]     ──→  return instantly if HIT
+   │
+[Circuit Breaker]      ──→  503 if upstream is dead
+   │
+[Proxy: undici]        ──→  forward to upstream service
+   │
+[Log + Metrics]        ──→  Prometheus
+   │
+   ▼
+ Response
+```
+
+---
+
+## Benchmark
+
+> 100 concurrent connections · rate limiting disabled · single instance on local machine
+
+| Concurrency | RPS | Avg Latency | P99 Latency | Pass Rate |
+|---|---|---|---|---|
+| 10 users | 2,893 | 2.93ms | 7ms | 100% |
+| 50 users | 4,743 | 10.04ms | 17ms | 100% |
+| 100 users | 5,782 | 16.78ms | 29ms | 100% |
+| 250 users | 6,084 | 40.58ms | 73ms | 100% |
+
+Run the load test yourself:
+```bash
+RATE_LIMIT_MAX=1000000 npx tsx tests/load-test.ts
+```
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| Framework | Fastify + TypeScript |
+| Proxy | undici |
+| Auth | jsonwebtoken |
+| Database | PostgreSQL 16 + Drizzle ORM |
+| Cache + Rate Limit | Redis 7 + ioredis |
+| Circuit Breaker | opossum |
+| Metrics | prom-client (Prometheus) |
+| Containers | Docker Compose |
+
+---
+
+## Features
+
+**Auth**
+- JWT — access + refresh tokens, 1h / 7d expiry
+- API Key — machine-to-machine via `x-api-key` header
+- Per-route auth type: `jwt` | `apikey` | `any`
+
+**Rate Limiting**
+- Per IP and per user independently
+- Redis-backed — shared across all instances, no bypass possible
+- Per-route override via DB column
+- `X-RateLimit-Limit / Remaining / Reset` headers on every response
+
+**RBAC**
+- Role embedded in JWT payload (`admin`, `user`, `service`)
+- Roles array per route in DB
+- 401 for bad auth · 403 for wrong role
+
+**Dynamic Routing**
+- Routes stored in Postgres, not in code
+- In-memory cache, refreshed every 30s — zero DB calls per request
+- Add a route with a SQL insert, live in under 30 seconds, no restart
+
+**Circuit Breaker**
+- One breaker per upstream URL
+- Opens after 50% failure rate over minimum 5 requests
+- Instant 503 while open — no hanging connections
+- Half-open after 30s, closes on success
+
+**Caching**
+- GET requests only · 200 responses only · 60s TTL
+- `X-Cache: HIT` / `X-Cache: MISS` on every response
+
+**Observability**
+- `GET /health` — uptime, Redis connectivity
+- `GET /health/circuits` — circuit breaker state per upstream
+- `GET /metrics` — Prometheus scrape endpoint
+
+| Metric | Type | Tracks |
+|---|---|---|
+| `gateway_requests_total` | Counter | method, route, status code |
+| `gateway_request_duration_ms` | Histogram | latency distribution |
+| `gateway_rate_limit_hits_total` | Counter | IP or user key type |
+| `gateway_auth_failures_total` | Counter | reason + auth type |
+| `gateway_cache_hits_total` | Counter | by route |
+| `gateway_circuit_breaker_state` | Gauge | 0=closed 1=open 2=half-open |
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/your-username/api-gateway.git
+cd api-gateway
+```
+
+Create `.env`:
+```env
+PORT=4004
+JWT_SECRET=your-secret-min-32-chars
+DATABASE_URL=postgres://postgres:mysecretpassword@postgres:5432/gateway_db
+REDIS_URL=redis://redis:6379
+NODE_ENV=production
+```
+
+Start everything:
+```bash
+docker compose up -d --build
+npx tsx src/db/migrate.ts
+```
+
+Test it:
+```bash
+# Login
+curl -X POST http://localhost:4004/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@test.com","password":"admin123"}'
+
+# Hit a protected route
+curl http://localhost:4004/user/profile \
+  -H "Authorization: Bearer <token>"
+
+# Health check
+curl http://localhost:4004/health
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── server.ts               entry point
+├── app.ts                  register routes + plugins
+├── router.ts               in-memory route cache from Postgres
+├── db/
+│   ├── client.ts           Drizzle + pg pool
+│   ├── redis.ts            ioredis singleton
+│   ├── schema.ts           table definitions
+│   └── migrate.ts          migrations + seed
+├── routes/
+│   ├── health.ts           /health  /metrics  /health/circuits
+│   ├── auth.ts             POST /auth/login
+│   └── proxy.ts            core proxy handler
+├── middleware/
+│   ├── auth.ts             JWT verify
+│   ├── apiKeysAuth.ts      API key verify
+│   ├── rbac.ts             role check
+│   ├── rateLimit.ts        Redis sliding window
+│   ├── cache.ts            Redis GET cache
+│   ├── logger.ts           structured logging
+│   └── errorHandler.ts     centralized error shape
+└── utils/
+    ├── token.ts            sign + verify JWT
+    ├── circuitBreaker.ts   opossum, one breaker per upstream
+    └── metrics.ts          prom-client metric definitions
+```
+
+---
+
+## Managing Routes
+
+Routes live in Postgres. No code changes, no restarts.
+
+```sql
+-- Add a route
+INSERT INTO routes (path, upstream, auth, auth_type, roles, enabled)
+VALUES ('/payments', 'http://payments-svc:5000', true, 'jwt', '{admin,user}', true);
+
+-- Disable a route instantly
+UPDATE routes SET enabled = false WHERE path = '/payments';
+
+-- API-key protected internal route
+INSERT INTO routes (path, upstream, auth, auth_type, roles, enabled)
+VALUES ('/internal', 'http://internal-svc:6000', true, 'apikey', '{service}', true);
+```
+
+Gateway picks it up within 30 seconds.
+
+---
+
+## Default Dev Credentials
+
+| Email | Password | Role |
+|---|---|---|
+| admin@test.com | admin123 | admin |
+| user@test.com | user123 | user |
+
+API Key: `test-api-key-billing-service`
+
+> Dev only. Replace with real DB-backed user management before any production use.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- # NodeJS-API-Gateway
 
 A production-grade API Gateway built with Node.js and TypeScript. Handles authentication, rate limiting, dynamic routing, circuit breaking, caching, and observability — all in a single deployable service.
 
@@ -276,4 +546,4 @@ docker exec -it gateway_redis redis-cli FLUSHALL
 
 Test API key: `test-api-key-billing-service` (owner: billing-service, role: service)
 
-> These are for development only. Replace with real user management backed by a database in production.
+> These are for development only. Replace with real user management backed by a database in production. -->
