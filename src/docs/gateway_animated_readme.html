@@ -1,0 +1,189 @@
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+@keyframes flow { to { stroke-dashoffset: -24; } }
+@keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes packetMove {
+  0%   { transform: translateY(0px);   opacity: 1; }
+  85%  { transform: translateY(380px); opacity: 1; }
+  100% { transform: translateY(380px); opacity: 0; }
+}
+@keyframes rejectPop { 0%{opacity:0;transform:scale(.7)} 30%{opacity:1;transform:scale(1.1)} 60%{transform:scale(.95)} 100%{opacity:1;transform:scale(1)} }
+
+.pipe-active { stroke-dasharray: 8 4; animation: flow 1.2s linear infinite; }
+.pipe-idle   { stroke-dasharray: 8 4; animation: flow 2.4s linear infinite; opacity: .35; }
+.status-dot  { animation: pulse 1.8s ease-in-out infinite; }
+
+.stage { cursor: pointer; }
+.stage rect { transition: filter .15s; }
+.stage:hover rect { filter: brightness(1.07); }
+
+.reject-badge { animation: rejectPop .35s cubic-bezier(.34,1.56,.64,1) forwards; }
+
+.stat { font-size: 11px; font-weight: 500; font-family: var(--font-mono); }
+
+#packet { animation: packetMove var(--packet-dur, 3s) ease-in var(--packet-delay, 0s) infinite; }
+</style>
+
+<svg width="100%" viewBox="0 0 680 600" role="img">
+<title>API Gateway request pipeline</title>
+<desc>Animated diagram showing a request flowing through all gateway stages: rate limit, auth, RBAC, cache, circuit breaker, proxy, and logging.</desc>
+
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- ── CLIENT ── -->
+<g class="stage node c-gray" onclick="sendPrompt('Who sends requests to the gateway?')">
+  <rect x="240" y="10" width="200" height="40" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="30" text-anchor="middle" dominant-baseline="central">Client / Consumer</text>
+</g>
+
+<!-- travelling packet -->
+<g id="packet" style="--packet-dur:4s; --packet-delay:0.2s">
+  <rect x="332" y="52" width="16" height="9" rx="3" fill="#EF9F27" opacity=".9"/>
+  <text x="340" y="60" text-anchor="middle" style="font-size:7px;fill:#412402;font-weight:600">REQ</text>
+</g>
+
+<!-- connector 0 -->
+<line x1="340" y1="50" x2="340" y2="70" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── STAGE 1: Rate limit IP ── -->
+<g class="stage node c-amber" onclick="sendPrompt('How does IP rate limiting work in the gateway?')">
+  <rect x="200" y="70" width="280" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="89" text-anchor="middle" dominant-baseline="central">① Rate limit — per IP</text>
+  <text class="ts" x="340" y="108" text-anchor="middle" dominant-baseline="central">Redis INCR · 100 req/min · X-RateLimit headers</text>
+</g>
+<!-- reject branch -->
+<line x1="480" y1="96" x2="550" y2="96" class="arr pipe-idle" marker-end="url(#arrow)" stroke="#BA7517" stroke-width="1"/>
+<g class="c-amber">
+  <rect x="552" y="78" width="68" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="586" y="96" text-anchor="middle" dominant-baseline="central">429</text>
+</g>
+
+<line x1="340" y1="122" x2="340" y2="142" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── STAGE 2: Auth ── -->
+<g class="stage node c-purple" onclick="sendPrompt('How does JWT and API key auth work in the gateway?')">
+  <rect x="200" y="142" width="280" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="161" text-anchor="middle" dominant-baseline="central">② Auth — JWT or API Key</text>
+  <text class="ts" x="340" y="180" text-anchor="middle" dominant-baseline="central">Bearer token · x-api-key · authType: jwt | apikey | any</text>
+</g>
+<!-- reject branch -->
+<line x1="480" y1="168" x2="550" y2="168" class="arr pipe-idle" marker-end="url(#arrow)" stroke="#534AB7" stroke-width="1"/>
+<g class="c-purple">
+  <rect x="552" y="150" width="68" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="586" y="168" text-anchor="middle" dominant-baseline="central">401</text>
+</g>
+
+<line x1="340" y1="194" x2="340" y2="214" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── STAGE 3: RBAC ── -->
+<g class="stage node c-purple" onclick="sendPrompt('How does RBAC work in the gateway?')">
+  <rect x="200" y="214" width="280" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="233" text-anchor="middle" dominant-baseline="central">③ RBAC — role check</text>
+  <text class="ts" x="340" y="252" text-anchor="middle" dominant-baseline="central">payload.role vs route.roles[ ] · per route in Postgres</text>
+</g>
+<!-- reject branch -->
+<line x1="480" y1="240" x2="550" y2="240" class="arr pipe-idle" marker-end="url(#arrow)" stroke="#534AB7" stroke-width="1"/>
+<g class="c-purple">
+  <rect x="552" y="222" width="68" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="586" y="240" text-anchor="middle" dominant-baseline="central">403</text>
+</g>
+
+<line x1="340" y1="266" x2="340" y2="286" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── STAGE 4: Cache ── -->
+<g class="stage node c-teal" onclick="sendPrompt('How does Redis caching work in the gateway?')">
+  <rect x="200" y="286" width="280" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="305" text-anchor="middle" dominant-baseline="central">④ Cache — GET requests</text>
+  <text class="ts" x="340" y="324" text-anchor="middle" dominant-baseline="central">Redis lookup · 60s TTL · X-Cache: HIT / MISS</text>
+</g>
+<!-- HIT branch -->
+<line x1="480" y1="312" x2="550" y2="312" class="arr pipe-idle" marker-end="url(#arrow)" stroke="#0F6E56" stroke-width="1"/>
+<g class="c-teal">
+  <rect x="552" y="294" width="68" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="586" y="312" text-anchor="middle" dominant-baseline="central">HIT ⚡</text>
+</g>
+
+<line x1="340" y1="338" x2="340" y2="358" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── STAGE 5: Circuit breaker ── -->
+<g class="stage node c-coral" onclick="sendPrompt('How does the circuit breaker work in the gateway?')">
+  <rect x="200" y="358" width="280" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="377" text-anchor="middle" dominant-baseline="central">⑤ Circuit breaker</text>
+  <text class="ts" x="340" y="396" text-anchor="middle" dominant-baseline="central">opossum · 50% err threshold · open 30s · one per upstream</text>
+</g>
+<!-- open branch -->
+<line x1="480" y1="384" x2="550" y2="384" class="arr pipe-idle" marker-end="url(#arrow)" stroke="#993C1D" stroke-width="1"/>
+<g class="c-coral">
+  <rect x="552" y="366" width="68" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="586" y="384" text-anchor="middle" dominant-baseline="central">503</text>
+</g>
+
+<line x1="340" y1="410" x2="340" y2="430" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── STAGE 6: Proxy ── -->
+<g class="stage node c-teal" onclick="sendPrompt('How does the reverse proxy forwarding work?')">
+  <rect x="200" y="430" width="280" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="340" y="449" text-anchor="middle" dominant-baseline="central">⑥ Proxy — undici</text>
+  <text class="ts" x="340" y="468" text-anchor="middle" dominant-baseline="central">Forward + x-user-id · 5s/10s timeout · log + metrics</text>
+</g>
+
+<line x1="340" y1="482" x2="340" y2="502" class="arr pipe-active" marker-end="url(#arrow)" stroke="var(--t)" stroke-width="1.5"/>
+
+<!-- ── UPSTREAM SERVICES ── -->
+<g class="stage node c-gray" onclick="sendPrompt('How are upstream services configured in the gateway?')">
+  <rect x="160" y="502" width="100" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="210" y="520" text-anchor="middle" dominant-baseline="central">:4001 /user</text>
+</g>
+<g class="stage node c-gray" onclick="sendPrompt('How are upstream services configured in the gateway?')">
+  <rect x="290" y="502" width="100" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="340" y="520" text-anchor="middle" dominant-baseline="central">:4002 /order</text>
+</g>
+<g class="stage node c-gray" onclick="sendPrompt('How are upstream services configured in the gateway?')">
+  <rect x="420" y="502" width="100" height="36" rx="6" stroke-width="0.5"/>
+  <text class="th" x="470" y="520" text-anchor="middle" dominant-baseline="central">:4006 /billing</text>
+</g>
+
+<!-- fan connectors to upstreams -->
+<line x1="340" y1="502" x2="210" y2="502" stroke="var(--t)" stroke-width="0.8" opacity=".4"/>
+<line x1="340" y1="502" x2="470" y2="502" stroke="var(--t)" stroke-width="0.8" opacity=".4"/>
+
+<!-- ── INFRA sidebar (left) ── -->
+<g class="stage node c-amber" onclick="sendPrompt('What does Redis do in the gateway?')">
+  <rect x="20" y="230" width="100" height="88" rx="8" stroke-width="0.5"/>
+  <text class="th" x="70" y="258" text-anchor="middle" dominant-baseline="central">Redis</text>
+  <text class="ts" x="70" y="276" text-anchor="middle" dominant-baseline="central">Rate limiting</text>
+  <text class="ts" x="70" y="292" text-anchor="middle" dominant-baseline="central">Response cache</text>
+  <circle class="status-dot" cx="108" cy="235" r="4" fill="#639922"/>
+</g>
+<line x1="120" y1="256" x2="200" y2="256" stroke="#BA7517" stroke-width="0.75" stroke-dasharray="4 3" fill="none"/>
+<line x1="120" y1="312" x2="200" y2="312" stroke="#BA7517" stroke-width="0.75" stroke-dasharray="4 3" fill="none"/>
+
+<!-- ── INFRA sidebar (right of upstreams) ── -->
+<g class="stage node c-blue" onclick="sendPrompt('What does Postgres store in the gateway?')">
+  <rect x="20" y="80" width="100" height="100" rx="8" stroke-width="0.5"/>
+  <text class="th" x="70" y="108" text-anchor="middle" dominant-baseline="central">Postgres</text>
+  <text class="ts" x="70" y="126" text-anchor="middle" dominant-baseline="central">Routes + roles</text>
+  <text class="ts" x="70" y="142" text-anchor="middle" dominant-baseline="central">API keys</text>
+  <text class="ts" x="70" y="158" text-anchor="middle" dominant-baseline="central">30s refresh</text>
+  <circle class="status-dot" cx="108" cy="85" r="4" fill="#639922"/>
+</g>
+<line x1="120" y1="130" x2="200" y2="130" stroke="#185FA5" stroke-width="0.75" stroke-dasharray="4 3" fill="none"/>
+<line x1="120" y1="240" x2="200" y2="240" stroke="#185FA5" stroke-width="0.75" stroke-dasharray="4 3" fill="none"/>
+
+<!-- ── Prometheus ── -->
+<g class="stage node c-gray" onclick="sendPrompt('What metrics does the gateway expose on /metrics?')">
+  <rect x="20" y="430" width="100" height="52" rx="8" stroke-width="0.5"/>
+  <text class="th" x="70" y="452" text-anchor="middle" dominant-baseline="central">Prometheus</text>
+  <text class="ts" x="70" y="468" text-anchor="middle" dominant-baseline="central">/metrics</text>
+  <circle class="status-dot" cx="108" cy="435" r="4" fill="#639922"/>
+</g>
+<line x1="120" y1="456" x2="200" y2="456" stroke="var(--t)" stroke-width="0.75" stroke-dasharray="4 3" fill="none"/>
+
+<!-- benchmark callout -->
+<text class="ts" x="340" y="560" text-anchor="middle" style="font-size:11px;opacity:.6">click any node to learn more · ~6,000 RPS · 250 concurrent · 100% pass rate</text>
+</svg>

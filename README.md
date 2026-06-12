@@ -19,7 +19,14 @@
 
 A single gateway that sits in front of all your backend services and handles everything they shouldn't have to care about — auth, rate limiting, routing, caching, and observability.
 
-```
+
+### Request Lifecycle Diagram
+<div align="center">
+  <iframe src="./src/docs/gateway-animated-readme/index.html" width="100%" height="500px" style="border:none;"></iframe>
+</div>
+
+
+<!-- ```
 Every request goes through:
 
  Client
@@ -43,7 +50,7 @@ Every request goes through:
    │
    ▼
  Response
-```
+``` -->
 
 ---
 
