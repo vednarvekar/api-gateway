@@ -22,7 +22,7 @@ A single gateway that sits in front of all your backend services and handles eve
 
 ### Request Lifecycle Diagram
 <div align="center">
-  <iframe src="./src/docs/gateway-animated-readme/index.html" width="100%" height="500px" style="border:none;"></iframe>
+  <iframe src="./src/docs/gateway-animated-readme.html" width="100%" height="500px" style="border:none;"></iframe>
 </div>
 
 
